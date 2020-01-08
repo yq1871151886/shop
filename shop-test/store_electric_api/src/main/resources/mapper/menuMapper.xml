@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.fh.dao.ElectricDao">
+    <!--<cache-ref namespace="com.fh.dao.ElectricDao"/>-->
+
+
+        <select id="queryElectricAll" resultType="com.fh.beans.vo.ElectricVo">
+            SELECT id,pid,electricName as name FROM r_electric WHERE isValid=1
+        </select>
+
+
+
+</mapper>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.fh.dao.BrandDao">
+    <!--<cache-ref namespace="com.fh.dao.ElectricDao"/>-->
+
+
+        <select id="queryBrandByElectricid" parameterType="string" resultType="com.fh.beans.vo.BrandVo">
+            SELECT * FROM relectric_brandid eb LEFT JOIN r_brand b ON eb.brandid=b.id WHERE eb.electricid=#{electricid}
+        </select>
+
+
+
+</mapper>

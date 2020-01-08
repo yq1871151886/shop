@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>购物车</title>
+    <link rel="stylesheet" href="/cart/carts/css/reset.css">
+    <link rel="stylesheet" href="/cart/carts/css/carts.css">
+</head>
+<body>
+
+<section class="cartMain">
+
+    <div class="cartMain_hd">
+        <ul class="order_lists cartTop">
+            <li class="list_chk">
+                <!--所有商品全选-->
+                <input type="checkbox" id="all" class="whole_check" onclick="checkAll()">
+                <label for="all" id="check" class=""></label>
+                全选
+            </li>
+            <li class="list_con">商品信息</li>
+            <li class="list_price">单价</li>
+            <li class="list_amount">数量</li>
+            <li class="list_sum">金额</li>
+            <li class="list_op">操作</li>
+        </ul>
+    </div>
+
+    <div class="cartBox"  id="cartTable">
+        <div class="order_content">
+
+        </div>
+    </div>
+    <!--底部-->
+    <div class="bar-wrapper" id="buts">
+
+    </div>
+</section>
+<section class="model_bg"></section>
+<section class="my_model">
+    <p class="title">删除宝贝<span class="closeModel">X</span></p>
+    <p>您确认要删除该宝贝吗？</p>
+    <div class="opBtn"><a href="javascript:;" class="dialog-sure">确定</a><a href="javascript:;" class="dialog-close">关闭</a></div>
+</section>
+    <script src="/cart/carts/js/jquery.min.js"></script>
+    <script src="../commons/js/md5.js"></script>
+
+
+
+
+<script type="text/javascript">
+      var token =  sessionStorage.getItem("token");
+      //alert(token);
+      $.ajaxSetup({
+          contentType:"application/x-www-form-urlencoded;charset=utf-8",
+          complete:function(XMLHttpRequest,textStatus){
+              var code=XMLHttpRequest.getResponseHeader("NOLOGIN");
+              //alert(code);
+              if(code != null && code=="513"){
+                  window.location.href="/login.html";
+              }
+          }
+          ,beforeSend:function (xhr) {
+              var appKey = sessionStorage.getItem("appKey");
+              var secRet = sessionStorage.getItem("secRet");
+              var randoms = Math.floor(Math.random()*100);
+              var dataTime = (new Date()).getTime();
+              var checkSumCode = hex_md5(appKey+secRet+randoms+dataTime);
+              xhr.setRequestHeader("token",token);
+              xhr.setRequestHeader("appKey",appKey);
+              xhr.setRequestHeader("checkSumCode",checkSumCode);
+              xhr.setRequestHeader("secRet",secRet);
+              xhr.setRequestHeader("randoms",randoms);
+              xhr.setRequestHeader("dataTime",dataTime);
+          }
+      });
+
+
+    $(function () {
+        queryCart()
+    })
+    /*提交订单
+    * */
+    function jumpOrders() {
+        $.ajax({
+            url:"http://localhost:8093/shop-cart/carts/cartJump",
+            type:"get",
+            dataType:"json",
+            success:function (result) {
+                if (result.code == 200) {
+                    window.location.href="../orders/orderCommit.html";
+                }
+            }
+        })
+    }
+
+
+
+    /*查询购物车*/
+        function queryCart() {
+            $.ajax({
+                url:"http://localhost:8093/shop-cart/carts/cart/queryCart",
+                type:"get",
+                dataType:"json",
+                success:function (result) {
+                    if (result.code == 200) {
+                        var data = result.data;
+                        var carts = data.card;
+                        //alert(JSON.stringify(carts));
+                        var cartsHtml='';
+                        var cc=0;
+                        var priceCount=0;
+                            for (var i = 0; i < carts.length; i++) {
+                                cartsHtml+='<div class="order_content">';
+                                cartsHtml+='<ul class="order_lists">';
+                                //单选框
+                                cartsHtml+= '<li class="list_chk">';
+                                cartsHtml+= '<input type="checkbox" id=""  class="son_check" value="'+carts[i].shopId+'">';
+                                if (carts[i].isChecked) {
+                                    cartsHtml+= '<label onclick="changeCheck(this)" shopId="'+carts[i].shopId+'" class="mark"></label>';
+                                }else {
+                                    cartsHtml+= '<label onclick="changeCheck(this)" shopId="'+carts[i].shopId+'"></label>';
+                                }
+                                cartsHtml+= '</li>';
+
+                                //图片
+                                cartsHtml+= '<li class="list_con">';
+                                cartsHtml+= '<div class="list_img"><a href="javascript:;"><img src="'+carts[i].shopImg+'" alt=""></a></div>';
+                                cartsHtml+= '<div class="list_text"><a href="javascript:;"><span>'+carts[i].shopName+'</span></a></div>';
+                                cartsHtml+='</li>';
+                                //价格
+                                cartsHtml+='<li class="list_price">';
+                                cartsHtml+=' <p class="price">￥<span>'+carts[i].price+'</span></p>';
+                                cartsHtml+='</li>';
+                                //商品数量
+                                cartsHtml+='<li class="list_amount">';
+                                cartsHtml+='<div class="amount_box">';
+                                cartsHtml+='<a href="javascript:;" onclick="javascript:addCartNum(\'sub\','+carts[i].shopId+',this)" class="reduce reSty">-</a>';
+                                cartsHtml+='<input type="text"  class="sum"  value="'+carts[i].count+'" onkeyup="blurChangeCount('+carts[i].shopId+',this)">';
+                                cartsHtml+='<a href="javascript:;" onclick="javascript:addCartNum(\'add\','+carts[i].shopId+',this)"  class="plus">+</a>';
+                                cartsHtml+='</div>';
+                                cartsHtml+='</li>';
+                                //商品小计
+                                cartsHtml+='<li class="list_sum">';
+                                cartsHtml+='<p class="sum_price">￥<spa>'+carts[i].total+'</spa></p>';
+                                cartsHtml+='</li>';
+                                //按钮
+                                cartsHtml+='<li class="list_op">';
+                                cartsHtml+='<p class="del"><a href="javascript:;" onclick="javascript:deleteShops('+carts[i].shopId+')" class="delBtn">移除商品</a></p>';
+                                cartsHtml+='</li>';
+                                cartsHtml+='</ul>';
+                                cartsHtml+='</div>';
+                                if (carts[i].isChecked) {
+                                    cc++;
+                                   // priceCount+=carts[i].total;
+                                }
+                            }
+                        //alert(cartsHtml);
+                        $("#cartTable").html(cartsHtml);
+
+                        var account = data.account;
+                        //alert(account);
+                        var butHtml='';
+                        butHtml+='<div class="bar-right">';
+                        butHtml+='<div class="piece">已选商品<strong class="piece_num">'+cc+'</strong>件</div>';
+                        butHtml+='<div class="totalMoney">共计: <strong class="total_text">'+account+'</strong></div>';
+                        butHtml+='<div class="calBtn"><a href="javascript:;" onclick="javascript:jumpOrders()" id="overCount" class="">结算</a></div>';
+                        butHtml+='</div>';
+                        $("#buts").html(butHtml);
+                        if (cc==carts.length){
+                            $("#check").addClass("mark")
+                        }else {
+                            $("#check").removeClass();
+                        }
+
+                        if (cc > 0) {
+                            $("#overCount").addClass("btn_sty");
+                        }else {
+                            $("#overCount").removeClass("btn_sty");
+                        }
+
+
+                    }
+                }
+            })
+        }
+        /*勾选商品品*/
+        function changeCheck(obj) {
+            var shopId = $(obj).attr("shopId");
+            $.ajax({
+                url:"http://localhost:8093/shop-cart/carts/cartJump/changeCheck/"+shopId,
+                type:"get",
+                dataType:"json",
+                success:function (result) {
+                    if (result.code == 200) {
+                        queryCart();
+                    }
+                }
+            })
+
+
+        }
+        /*增加购物车中商品的数量*/
+        function addCartNum(type,shopId,obj) {
+                var oldCount = $(obj).parent(0).find("input").val();
+
+            $.ajax({
+                url:"http://localhost:8093/shop-cart/carts/cartJump/changeCount/"+shopId+"/"+type+"/"+oldCount,
+                type:"get",
+                dataType:"json",
+                success:function (result) {
+                    if (result.code == 200) {
+                        queryCart();
+                    }
+                }
+            })
+        }
+        /*输入购物车中商品的数量*/
+        function blurChangeCount(shopId,obj) {
+            var count = $(obj).val();
+            $.ajax({
+                url:"http://localhost:8093/shop-cart/carts/cartJump/blurChangeCount/"+shopId+"/"+count,
+                type:"get",
+                dataType:"json",
+                success:function (result) {
+                    if (result.code == 200) {
+                        queryCart();
+                    }
+                }
+            })
+
+
+        }
+    /*全选*/
+      function checkAll() {
+        var check = $("#check").attr("class");
+        if (check != "mark"){
+            check="no";
+        }
+        //alert(check);
+          $.ajax({
+              url:"http://localhost:8093/shop-cart/carts/cartJump/checkAll/"+check,
+              type:"get",
+              dataType:"json",
+              success:function (result) {
+                  if (result.code == 200) {
+                      queryCart();
+                  }
+              }
+          })
+      }
+        /*删除商品*/
+      function deleteShops(shopId) {
+          $.ajax({
+              url:"http://localhost:8093/shop-cart/carts/cartJump/deleteShops/"+shopId,
+              type:"get",
+              dataType:"json",
+              success:function (result) {
+                  if (result.code == 200) {
+                      queryCart();
+                  }
+              }
+          })
+      }
+
+
+
+
+
+</script>
+</body>
+</html>

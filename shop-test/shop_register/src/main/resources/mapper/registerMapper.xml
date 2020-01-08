@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.fh.dao.RegisterDao">
+    <!--<cache-ref namespace="com.fh.dao.ElectricDao"/>-->
+
+    <select id="queryRegisterCount" resultType="long">
+          SELECT COUNT(id) FROM r_user
+    </select>
+    <select id="queryRegisterPageList" resultType="com.fh.beans.vo.UserVo">
+          SELECT id,loginName,realName,loginPwd,email,phone,idCard,cardid,birthday
+            FROM r_user
+            limit #{pageBean.start},#{pageBean.length}
+    </select>
+
+
+
+</mapper>

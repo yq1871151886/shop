@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd" >
+<mapper namespace="com.fh.dao.ShopsDao">
+    <!--<cache-ref namespace="com.fh.dao.ShopsDao"/>-->
+    <select id="queryBrand" resultType="java.util.HashMap">
+        SELECT id,brandName name FROM r_brand
+    </select>
+
+
+    <select id="queryShopsCount" resultType="long">
+        SELECT count(id) FROM r_shop_product
+    </select>
+    <select id="queryShopsPage" resultType="com.fh.bean.vo.ShopsVo">
+        SELECT sp.id,sp.name,sp.subtitle,sp.main_img mainImg,sp.sub_imgs subImgs,sp.detail,sp.price,sp.stock,sp.status,sp.create_time createTime,sp.update_time updateTime
+		FROM t_shop_product sp
+			  limit #{start},#{shops.limit}
+    </select>
+
+    <select id="queryShopsAllByElectricid" parameterType="string" resultType="com.fh.bean.vo.ShopsVo">
+        SELECT * FROM r_shop_product ps
+          LEFT JOIN r_shopid_electricid rpe
+            ON ps.id=rpe.shopid
+         <if test="ele != null">
+             WHERE electricid = #{ele}
+         </if>
+    </select>
+
+    <select id="queryShopsByBrandid"  resultType="com.fh.bean.vo.ShopsVo">
+        SELECT * FROM r_shop_product ps
+            LEFT JOIN r_shopid_electricid rpe
+            ON ps.id=rpe.shopid
+          <if test="brandid!=null">
+              where ps.brandid=#{brandid} and rpe.electricid=#{electricid}
+          </if>
+    </select>
+
+
+    <sql id="where">
+        <where>
+            <if test="shops.electricid!=null">
+                and rs.electricid=#{shops.electricid}
+            </if>
+            <if test="shops.brandid!=null">
+                and p.brandid=#{shops.brandid}
+            </if>
+        </where>
+    </sql>
+    <select id="queryShopsByparameterCount" resultType="long">
+        SELECT count(p.id) FROM r_shop_product p
+	      LEFT JOIN r_shopid_electricid  rs
+		    ON p.id=rs.shopid
+		    <include refid="where"></include>
+    </select>
+    <select id="queryShopsByparameter" resultType="com.fh.bean.vo.ShopsVo">
+        SELECT * FROM r_shop_product p
+            LEFT JOIN r_shopid_electricid  rs
+            ON p.id=rs.shopid
+            <include refid="where"></include>
+           limit #{start},#{shops.limit}
+    </select>
+
+    <select id="queryStockByShopId" parameterType="int" resultType="java.lang.Integer">
+        select stock from r_shop_product where id=#{shopId}
+    </select>
+
+    <update id="updateStockByPassTimer">
+       update r_shop_product SET stock=stock+#{stock} where id=#{shopId}
+    </update>
+
+</mapper>

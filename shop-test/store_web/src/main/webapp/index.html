@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="http://www.w3.org/1999/xhtml" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <div th:replace="common::html" ></div>
+    <link type="text/css" href="/commons/mainjc/css/style.css" rel="stylesheet" />
+    <script type="text/javascript" src="/commons/mainjc/js/jquery.min.js"></script>
+
+
+
+    <meta name="description" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="all,follow">
+    <!-- Bootstrap CSS-->
+    <link rel="stylesheet" href="/commons/mainjs/vendor/bootstrap/css/bootstrap.min.css">
+    <!-- Font Awesome CSS-->
+    <link rel="stylesheet" href="/commons/mainjs/vendor/font-awesome/css/font-awesome.min.css">
+    <!-- Google fonts - Roboto-->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:400,300,700,400italic">
+    <!-- owl carousel-->
+    <link rel="stylesheet" href="/commons/mainjs/vendor/owl.carousel/assets/owl.carousel.css">
+    <link rel="stylesheet" href="/commons/mainjs/vendor/owl.carousel/assets/owl.theme.default.css">
+    <!-- theme stylesheet-->
+    <link rel="stylesheet" href="/commons/mainjs/css/style.default.css" id="theme-stylesheet">
+    <!-- Custom stylesheet - for your changes-->
+    <link rel="stylesheet" href="/commons/mainjs/css/custom.css">
+    <link rel="stylesheet" href="commons/layui/css/layui.css">
+    <!-- Favicon-->
+    <link rel="shortcut icon" href="/commons/mainjs/img/favicon.png">
+    <script src="/commons/mainjs/vendor/popper.js/umd/popper.min.js"> </script>
+    <script src="/commons/mainjs/vendor/jquery.cookie/jquery.cookie.js"> </script>
+    <script src="/commons/mainjs/vendor/owl.carousel/owl.carousel.min.js"></script>
+    <script src="/commons/mainjs/vendor/masonry-layout/masonry.pkgd.min.js"></script>
+    <script src="/commons/mainjs/js/front.js"></script>
+    <script src="commons/js/md5.js"></script>
+</head>
+<body>
+<!--左侧菜单-->
+<div class="sec-mainL left" id="menu">
+</div>
+<div style="margin-right: 300px">
+    <div id="eles"></div>
+    <div id="brands"></div>
+</div>
+<div class="layui-card">
+    <div class="layui-card-header"><span>商品列表</span>
+        <button type="button" onclick="queryCart()" class="btn btn-primary">我的购物车<span id="cardCount"></span></button>
+    </div>
+    <div>
+    <center>
+        <div class="layui-card-body">
+            <table class="layui-hide" id="shop"  lay-filter="shop"></table>
+        </div>
+    </center>
+    </div>
+</div>
+<script type="text/javascript" src="commons/layui/layui.all.js" charset="utf-8"></script>
+<script type="text/javascript" th:inline="none">
+    var token = "";
+    if (sessionStorage.getItem("token")) {
+        var token = sessionStorage.getItem("token");
+    }
+    $.ajax({
+        url:"http://localhost:8093/queryKey",
+        type:"get",
+        dataType:"json",
+        async:false,
+        success:function (result) {
+            sessionStorage.setItem("appKey",result.appKey);
+            sessionStorage.setItem("secRet",result.secRet);
+        }
+    });
+    $.ajaxSetup({
+        contentType:"application/x-www-form-urlencoded;charset=utf-8",
+        complete:function(XMLHttpRequest,textStatus){
+            var code=XMLHttpRequest.getResponseHeader("NOLOGIN");
+            //alert(code);
+           if(code != null && code=="513"){
+                window.location.href="/login.html";
+            }
+            /*  var code1=XMLHttpRequest.getResponseHeader("NORIGHT");
+             if(code1 != null && code1=="504"){
+                 window.location.href="/noRight.jsp";
+             }*/
+        }
+        ,beforeSend:function (xhr) {
+            var appKey = sessionStorage.getItem("appKey");
+            var secRet = sessionStorage.getItem("secRet");
+            var randoms = Math.floor(Math.random()*100);
+            var dataTime = (new Date()).getTime();
+            var checkSumCode = hex_md5(appKey+secRet+randoms+dataTime);
+            xhr.setRequestHeader("token",token);
+            xhr.setRequestHeader("appKey",appKey);
+            xhr.setRequestHeader("checkSumCode",checkSumCode);
+            xhr.setRequestHeader("secRet",secRet);
+            xhr.setRequestHeader("randoms",randoms);
+            xhr.setRequestHeader("dataTime",dataTime);
+        }
+    });
+
+
+
+        function queryCart(){
+           $.ajax({
+               url:"http://localhost:8093/shop-cart/carts/cartJump",
+               type:"get",
+               dataType:"json",
+               success:function (result) {
+                   if (result.code == 200) {
+                       window.open("cart/carts.html");
+                   }
+               }
+           })
+        }
+        function queryCartCount(){
+           $.ajax({
+               url:"http://localhost:8093/shop-cart/carts/cart",
+               type:"get",
+               dataType:"json",
+               success:function (result) {
+                   if (result.code == 200) {
+                       $("#cardCount").text(result.data);
+                   }
+               }
+           })
+        }
+
+    //注意：导航 依赖 element 模块，否则无法进行功能性操作
+    layui.use(['element','util','form','table'], function () {
+        var form = layui.form;
+        var element = layui.element;
+        element.on('nav(test1)', function (elem) {
+            console.log(elem); //得到当前点击的DOM对象
+        });
+
+        //监听折叠
+        element.on('collapse(test1)', function(data){
+            //layer.msg('展开状态：'+ data.show);
+        });
+
+        var utile = layui.util;
+    });
+   layui.use('table', function(){
+        var table = layui.table;
+
+        table.render({
+            elem: '#shop'
+            ,url:'http://localhost:8093/shop-list/product/shop/queryShopsByparameter'
+            ,method:'get'
+            ,page: { //支持传入 laypage 组件的所有参数（某些参数除外，如：jump/elem） - 详见文档
+                layout: ['limit', 'count', 'prev', 'page', 'next', 'skip'] //自定义分页布局
+                //,curr: 5 //设定初始在第 5 页
+                ,groups: 1 //只显示 1 个连续页码
+                ,first: false //不显示首页
+                ,last: false //不显示尾页
+            }
+            ,cols: [[
+                {field:'id', width:80, title: 'ID', sort: true}
+                ,{field:'name', width:100, title: '商品名称'}
+                ,{field:'mainImg', width:150, title: '主图',templet:function (d) {
+                        if (d.mainImg) {
+                            return '<img src="'+d.mainImg+'">';
+                        }
+                        return '';
+                    }}
+                ,{field:'subtitle', width:100, title: '标题'}
+                ,{field:'detail', width:100, title: '描述'}
+                ,{field:'price', width:100, title: '价格'}
+                ,{field:'stock', width:100, title: '库存'}
+                ,{fixed: 'right', align: 'center', width: 200, toolbar: '#barDemo'}
+            ]]
+
+        });
+    });
+
+    $(function () {
+
+
+
+
+        queryMenu();
+        var $top = $('.sec-mainNav').offset().top + $('.sec-mainNav').height();
+        //左侧导航动画
+        $('.sec-mainNav li').on('mouseenter', function() {
+            var electricid = $(this).attr("eleid");
+            $.ajax({
+                url:"http://localhost:8093/shop-brand/brands/"+electricid,
+                type:"get",
+                async:false,
+                dateType:"json",
+                success:function (result) {
+                    if (result.code == 200){
+                        var brands = result.data;
+                        var bandHtml='<ul>';
+
+                        for (var i=0;i<brands.length;i++){
+                            bandHtml+='<li>';
+                            bandHtml+='<a href="javascript:void(0)" eleid="'+electricid+'" brandid="'+brands[i].id+'" onclick="chooselectricAndBrands(this)"><img src="'+brands[i].image+'"/></a>';
+                            bandHtml+='</li>';
+                        }
+                        bandHtml+='</ul>';
+                    $('.menu-panel-bd').html(bandHtml);
+                    }
+                }
+            })
+
+
+            var $height = $(this).offset().top + $(this).find('.menu-panel').outerHeight();
+            $(this).find('.menu-panel').show();
+            if($height - $top >= 0) {
+                $(this).find('.menu-panel').css({
+                    top: -($height - $top) + 'px'
+                })
+            }
+
+
+
+
+
+        });
+        $('.sec-mainNav li').on('mouseleave', function() {
+            $(this).find('.menu-panel').hide();
+        });
+        /*这是两个展示DIV,类似于淘宝京东那种有大图的
+        *queryShopsAllByElectricid();
+        queryShopsAllByBrand();*/
+        if (token!=""){
+            queryCartCount();
+        }
+
+
+
+    })
+
+    var elebut;
+    function queryMenu() {
+
+        $.ajax({
+            url: "http://localhost:8093/shop-electric/electrics",
+            type: "get",
+            dataType: "json",
+            async: false,
+            success: function (result) {
+                if (result.code = 200) {
+                    var ele = result.data;
+                    elebut=ele;
+                    var menuHtml = '<div class="mainL-hd-box">';
+                    menuHtml += '<h2 class="mainL-hd"><a href="#">拼夕夕商城</a></h2>';
+                    menuHtml += '</div>';
+                    menuHtml += '<ul class="sec-mainNav">';
+                    for (var i = 0; i < ele.length; i++) {
+                        menuHtml += '<li eleid="'+ele[i].id+'" onclick="searchProductList(this)">';
+                        menuHtml += '<h3>' + ele[i].name + '</h3>';
+                        menuHtml += '<div class="menu-tab">';
+                        var child = ele[i].children;
+                        for (var j = 0; j < child.length; j++) {
+                            if (j < 3) {
+                                menuHtml += '<a href="javascript:void(0)">' + child[j].name + '</a>';
+                            } else {
+                                break;
+                            }
+                        }
+                        menuHtml += '</div>';
+                        menuHtml += '<span class="menu-more">更多</span>';
+                        menuHtml += '<div class="menu-panel">';
+                        menuHtml += '<div class="menu-panel-hd">';
+                        menuHtml += '<h4>热门分类</h4>';
+                        menuHtml += '<div class="sub-group">';
+                        for (var k = 0; k < child.length; k++) {
+                            menuHtml += '<a href="javascript:void(0)" name="ele" eleid="'+ele[i].id+'" elechildid="'+child[k].id+'" onclick="chooselectricAndBrands(this)">' + child[k].name + '</a>';
+                        }
+                        menuHtml += '</div>';
+                        menuHtml += '</div>';
+
+
+                        menuHtml+='<div class="menu-panel-bd">';
+
+                        menuHtml+='</div>';
+                        menuHtml+='<a href="javascript:void(0)" class="menu-panel-btn">';
+                        menuHtml+='<span>查看全部商家</span>';
+                        menuHtml+='<em></em>';
+                        menuHtml+='</a>';
+                        menuHtml += '</div>';
+                        menuHtml += '</li>';
+                    }
+                        menuHtml += '</ul>';
+                }
+                $("#menu").html(menuHtml);
+            },
+        })
+    }
+
+    function chooselectricAndBrands(obj) {
+        $("[name='ele']").each(function (index,domEle){
+            if (domEle == obj) {
+                $(domEle).attr("class","btn btn-outline-danger btn-sm");
+            }else {
+                $(domEle).attr("class","");
+            }
+        });
+        var elechildId=$(obj).attr("elechildid");
+        var eleid=$(obj).attr("eleid");
+        var brandid=$(obj).attr("brandid");
+        if (typeof (elechildId)=="undefined"){
+            elechildId=null;
+        }
+        if (typeof (brandid)=="undefined"){
+            brandid=null;
+        }
+        getelebuts(eleid,elechildId);
+        getBrandbuts(eleid,brandid);
+
+
+        searchProductList(obj);
+    }
+
+    /*获取上边类型那一行的按钮*/
+    function getelebuts(eleid,elechildId) {
+        var elehtml = '<div class="menu-panel-hd">';
+        elehtml += '<h4>热门分类</h4>';
+        elehtml += '<div class="sub-group">';
+        for (var k = 0; k < elebut.length; k++) {
+            if (eleid == elebut[k].id) {
+                var elechild=elebut[k].children;
+                for (var i = 0;i<elechild.length; i++) {
+                    if (elechild[i].id == elechildId) {
+                        elehtml += '<a href="javascript:void(0)" name="ele" eleid="'+eleid+'" elechildid="'+elechild[i].id+'" class="btn btn-outline-danger btn-sm" onclick="onclickele(this)">' + elechild[i].name + '</a>';
+                    }else {
+                        elehtml += '<a href="javascript:void(0)" name="ele" eleid="'+eleid+'" elechildid="'+elechild[i].id+'" onclick="onclickele(this)">' + elechild[i].name + '</a>';
+                    }
+                }
+            }
+        }
+        elehtml += '</div>';
+        elehtml += '</div>';
+        $("#eles").html(elehtml);
+    }
+
+    function onclickele(obj) {
+        //首先切换样式
+        var allLi=$(obj).siblings();
+        allLi.each(function(){
+            $(this).removeClass("btn btn-outline-danger btn-sm");
+        })
+        $(obj).addClass("btn btn-outline-danger btn-sm");
+        searchProductList(obj);
+    }
+    function onclickBrand(obj) {
+        //首先切换样式
+        var allLi=$(obj).siblings();
+        allLi.each(function(){
+            $(this).removeClass("btn btn-outline-danger btn-sm");
+        })
+        $(obj).addClass("btn btn-outline-danger btn-sm");
+        searchProductList(obj);
+    }
+    function searchProductList(obj){
+        var eleid =$(obj).attr("eleid");
+        var elechildid =$(obj).attr("elechildid");
+        var brandid =$(obj).attr("brandid");
+
+        //alert(eleid+","+elechildid+","+brandid);
+        var type="";
+        if (typeof (brandid) == "undefined" && typeof (elechildid)=="undefined"){
+            type=eleid;
+        } else if (typeof (brandid) == "undefined") {
+            type=elechildid;
+        }else if (typeof (brandid) != "undefined"){
+            type=eleid;
+        }
+        var datajson={};
+        datajson.brandid=brandid;
+        datajson.electricid = type;
+
+        //重新加载列表并传参
+        layui.table.reload('shop',{
+                where:datajson
+                ,page:
+                    {
+                        curr: 1 //重新从第 1 页开始
+                    }
+            }
+        );
+    }
+    function getBrandbuts(eleid,brandid) {
+        $.ajax({
+            url:"http://localhost:8093/shop-brand/brands/"+eleid,
+            type:"get",
+            async:false,
+            dateType:"json",
+            success:function (result) {
+                if (result.code == 200){
+                    var brands = result.data;
+                    var bandHtml='<div class="sub-group">';
+                    for (var i=0;i<brands.length;i++){
+                        if (brands[i].id==brandid) {
+                            bandHtml+='<a href="javascript:void(0)" class="btn btn-outline-danger btn-sm" eleid="'+eleid+'" brandid="'+brands[i].id+'" onclick="onclickBrand(this)"><img src="'+brands[i].image+'" width="100px"/></a>';
+                        }else {
+                            bandHtml+='<a href="javascript:void(0)" eleid="'+eleid+'" brandid="'+brands[i].id+'" onclick="onclickBrand(this)"><img src="'+brands[i].image+'" width="100px"/></a>';
+                        }
+                    }
+                    bandHtml+='</div>';
+                    $('#brands').html(bandHtml);
+                }
+            }
+        })
+
+    }
+
+
+    layui.table.on('tool(shop)',function (obj) {
+        var data = obj.data;
+        var shopsid = data.id;
+        //alert(shopsid);
+        if (obj.event=='edit'){
+            $.ajax({
+                url:"http://localhost:8093/shop-cart/carts/cart/"+shopsid,
+                type:"get",
+                dataType:"json",
+                success:function (result) {
+                    //alert(result.data);
+                        $("#cardCount").text(result.data);
+
+                }
+            })
+        }
+    })
+
+
+</script>
+
+<script type="text/html" id="barDemo">
+    <!--<a class="layui-btn layui-btn-primary layui-btn-xs" lay-event="detail">查看</a>-->
+    <a class="layui-btn layui-btn-warm" lay-event="edit">加入购物车</a>
+    <!--layui-btn layui-btn-xs-->
+</script>
+<style>
+    .layui-table-cell {
+    height: 100px;
+    width: 150px;
+    max-width: 100%;
+    }
+</style>
+
+</body>
+</html>
